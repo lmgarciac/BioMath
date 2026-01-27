@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="BioMath/BioMath.vcxproj" Id="ebd049bf-0009-44c7-bd60-de5f85ba87bf" />
+</Solution>
