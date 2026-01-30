@@ -22,8 +22,7 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="notes\roadmap.md" />
-    <None Include="Readme.md" />
+    <None Include="..\Readme.md" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>

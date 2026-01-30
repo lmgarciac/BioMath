@@ -23,10 +23,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Readme.md">
-      <Filter>Info</Filter>
-    </None>
-    <None Include="notes\roadmap.md">
+    <None Include="..\Readme.md">
       <Filter>Info</Filter>
     </None>
   </ItemGroup>
