@@ -9,6 +9,7 @@
 
 #define WIN32_LEAN_AND_MEAN //Minimal basic WinApi
 #include <windows.h>
+#include <windowsx.h>
 #include <malloc.h>
 #include <gl/GL.h>
 
@@ -181,6 +182,9 @@ static GLint  g_uRes = -1;
 
 static float g_timeSeconds = 0.0f; //Tiempo global
 
+static float g_mouseX = 0.0f;
+static float g_mouseY = 0.0f;
+static GLint g_uMouse = -1;
 
 // ---------------------------
 // Helpers
@@ -272,9 +276,11 @@ static bool CompileAndLinkProgram()
 	const char* fsSrc =
 		"#version 330 core\n"
 		"in vec2 vUV;\n"
+
 		"out vec4 FragColor;\n"
 		"uniform float uTime;\n"
 		"uniform vec2  uResolution;\n"
+		"uniform vec2 uMouse;\n"
 		"\n"
 		"float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }\n"
 		"float noise(vec2 p){\n"
@@ -288,11 +294,23 @@ static bool CompileAndLinkProgram()
 		"  return mix(a,b,u.x) + (c-a)*u.y*(1.0-u.x) + (d-b)*u.x*u.y;\n"
 		"}\n"
 		"\n"
+
 		"void main(){\n"
 		"  vec2 uv = vUV;\n"
+
+		"  // Mouse normalized (0..1). Invertimos Y para que arriba sea arriba.\n"
+		"  vec2 m = uMouse / uResolution;\n"
+		"  m.y = 1.0 - m.y;\n"
+		   
+		"  // Warp suave alrededor del mouse\n"
+		"  vec2 p = uv - m;\n"
+		"  float d = length(p);\n"
+		"  uv += (p / (d + 0.001)) * 0.3 * exp(-d * 2.0);\n"
+		   
 		"  float t = uTime;\n"
-		"  float n = noise(uv*6.0 + vec2(t*0.15, t*0.07));\n"
+		"  float n = noise(uv * 6.0 + vec2(t * 0.15, t * 0.07));\n"
 		"  float vign = smoothstep(1.2, 0.2, length(uv - 0.5));\n"
+
 		"  vec3 col = vec3(0.08,0.10,0.14);\n"
 		"  col += 0.35 * vec3(0.20,0.55,0.95) * n;\n"
 		"  col += 0.15 * vec3(sin(t + uv.x*6.0), sin(t*0.7 + uv.y*5.0), sin(t*1.3)) * 0.5;\n"
@@ -365,6 +383,7 @@ static bool CompileAndLinkProgram()
 
 	g_uTime = glGetUniformLocation_ptr(g_program, "uTime");
 	g_uRes = glGetUniformLocation_ptr(g_program, "uResolution");
+	g_uMouse = glGetUniformLocation_ptr(g_program, "uMouse");
 
 	return true;
 }
@@ -411,6 +430,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
+	case WM_MOUSEMOVE:
+	{
+		const int x = GET_X_LPARAM(lParam);
+		const int y = GET_Y_LPARAM(lParam);
+		g_mouseX = (float)x;
+		g_mouseY = (float)y;
+		return 0;
+	}
 	case WM_SIZE:
 		g_width = LOWORD(lParam);
 		g_height = HIWORD(lParam);
@@ -609,6 +636,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 		glUseProgram_ptr(g_program);
 		if (g_uTime >= 0) glUniform1f_ptr(g_uTime, g_timeSeconds);
 		if (g_uRes >= 0) glUniform2f_ptr(g_uRes, (float)g_width, (float)g_height);
+		if (g_uMouse >= 0) glUniform2f_ptr(g_uMouse, g_mouseX, g_mouseY);
 
 		// Dibujar el fullscreen triangle
 		glBindVertexArray_ptr(g_vao);
