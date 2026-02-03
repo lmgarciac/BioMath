@@ -1,11 +1,11 @@
-// DEFINICIONES //
+Ôªø// DEFINICIONES //
 
 // Contexto OpenGL//
  
 // Un contexto de OpenGL es un estado de renderizado integral que encapsula todos los ajustes, 
-// recursos (texturas, shaders, buffers) y la configuraciÛn de la tuberÌa gr·fica para una aplicaciÛn 
-// especÌfica. Funciona como un "puerto" o hilo de ejecuciÛn activo, obligatorio para que los comandos 
-// de la GPU surtan efecto en una ventana especÌfica, siguiendo reglas estrictas de un contexto por hilo.
+// recursos (texturas, shaders, buffers) y la configuraci√≥n de la tuber√≠a gr√°fica para una aplicaci√≥n 
+// espec√≠fica. Funciona como un "puerto" o hilo de ejecuci√≥n activo, obligatorio para que los comandos 
+// de la GPU surtan efecto en una ventana espec√≠fica, siguiendo reglas estrictas de un contexto por hilo.
 
 #define WIN32_LEAN_AND_MEAN //Minimal basic WinApi
 #include <windows.h>
@@ -15,37 +15,42 @@
 
 #pragma comment(lib, "opengl32.lib")
 
+#include <mmsystem.h> //Windows multimedia API
+#pragma comment(lib, "winmm.lib")
+
+#include <cmath>
+
 // ----------------------------
 // Declaraciones GL/WGL minimas
 // ----------------------------
 
-// ConstrucciÛn manual de tipos b·sicos de OpenGL
+// Construcci√≥n manual de tipos b√°sicos de OpenGL
 
 typedef char GLchar;
 typedef ptrdiff_t GLsizeiptr;
 
-// Constantes simbÛlicas de OpenGL.
+// Constantes simb√≥licas de OpenGL.
 
-#define GL_ARRAY_BUFFER 0x8892 // 0x8892 Un valor entero ˙nico que el est·ndar OpenGL asigna al concepto ìarray bufferî. (Vertex data).
+#define GL_ARRAY_BUFFER 0x8892 // 0x8892 Un valor entero √∫nico que el est√°ndar OpenGL asigna al concepto ‚Äúarray buffer‚Äù. (Vertex data).
 #define GL_STATIC_DRAW 0x88E4 // Pista (sugerencia) sobre como se va a usar el buffer para el driver.
-#define GL_VERTEX_SHADER 0x8B31 // Se usa para crear shaders (un shader de tipo vÈrtice)
+#define GL_VERTEX_SHADER 0x8B31 // Se usa para crear shaders (un shader de tipo v√©rtice)
 #define GL_FRAGMENT_SHADER 0x8B30 // Se usa para crear shaders (un shader de tipo fragment)
-#define GL_COMPILE_STATUS 0x8B81 // El estado de compilaciÛn de un shader (øEste shader compilÛ bien?)
+#define GL_COMPILE_STATUS 0x8B81 // El estado de compilaci√≥n de un shader (¬øEste shader compil√≥ bien?)
 #define GL_LINK_STATUS 0x8B82 // El estado de linkeo de un programa de shaders
 #define GL_INFO_LOG_LENGTH 0x8B84 // La longitud del log de errores o warnings
 #define GL_TRUE 1 // Los valores booleanos de OpenGL (usa enteros).
 #define GL_FALSE 0
 
 
-// Constantes de la extensiÛn WGL (permite pedir contextos OpenGL modernos)
+// Constantes de la extensi√≥n WGL (permite pedir contextos OpenGL modernos)
 
-#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091 // El n˙mero de versiÛn mayor del contexto OpenGL que estamos pidiendo
-#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092 // El n˙mero de versiÛn menor del contexto OpenGL
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091 // El n√∫mero de versi√≥n mayor del contexto OpenGL que estamos pidiendo
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092 // El n√∫mero de versi√≥n menor del contexto OpenGL
 #define WGL_CONTEXT_PROFILE_MASK_ARB  0x9126 // Que perfil de OpenGL quiero
 #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001 // El perfil core de OpenGL
 
 
-// Typedef de un puntero a funciÛn para el tipo de la funciÛn de extensiÛn wglCreateContextAttribsARB, 
+// Typedef de un puntero a funci√≥n para el tipo de la funci√≥n de extensi√≥n wglCreateContextAttribsARB, 
 // que es la que te permite crear un contexto OpenGL moderno(ej : 3.3 core) en Windows.
 
 typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC, HGLRC, const int*);
@@ -53,7 +58,7 @@ typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC, HGLRC, const int*)
 
 // En algunos casos APIENTRYP no puede no estar definido, lo definimos.
 // APIENTRY suele corresponder a __stdcall en 32 bits y a "*" en 64 bits. 
-// B·sicamente define como una funciÛn recibe argumentos, quiÈn limpia la pila y cÛmo se nombra el sÌmbolo a nivel binario.
+// B√°sicamente define como una funci√≥n recibe argumentos, qui√©n limpia la pila y c√≥mo se nombra el s√≠mbolo a nivel binario.
 
 #ifndef APIENTRYP
 	#define APIENTRYP APIENTRY *
@@ -62,20 +67,20 @@ typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC, HGLRC, const int*)
 // Typedefs que describen la firma exacta de diversas funciones OpenGL modernas, para poder mas adelante obtener el puntero
 // y llamarlas como funciones normales.
 
-// PFNGL...PROC viene de la convenciÛn del "registry":
+// PFNGL...PROC viene de la convenci√≥n del "registry":
 // PFN = Pointer to FuNction
 // GL = OpenGL
-// ... = nombre de la funciÛn
-// PROC = procedure(histÛrico)
+// ... = nombre de la funci√≥n
+// PROC = procedure(hist√≥rico)
 
 
 // BLoque de shaders:
 
 typedef GLuint(APIENTRYP PFNGLCREATESHADERPROC)(GLenum); // Crea un objeto shader (vertex o fragment) y devuelve un ID (GLuint).
-typedef void  (APIENTRYP PFNGLSHADERSOURCEPROC)(GLuint, GLsizei, const GLchar* const*, const GLint*); // Le pasa el cÛdigo GLSL al shader (se puede pasar 1 o varias strings).
+typedef void  (APIENTRYP PFNGLSHADERSOURCEPROC)(GLuint, GLsizei, const GLchar* const*, const GLint*); // Le pasa el c√≥digo GLSL al shader (se puede pasar 1 o varias strings).
 typedef void  (APIENTRYP PFNGLCOMPILESHADERPROC)(GLuint); // Compila el shader.
 typedef void  (APIENTRYP PFNGLGETSHADERIVPROC)(GLuint, GLenum, GLint*); // Consulta propiedades, resultado de compilacion
-typedef void  (APIENTRYP PFNGLGETSHADERINFOLOGPROC)(GLuint, GLsizei, GLsizei*, GLchar*); // Obtiene el texto del log de compilaciÛn
+typedef void  (APIENTRYP PFNGLGETSHADERINFOLOGPROC)(GLuint, GLsizei, GLsizei*, GLchar*); // Obtiene el texto del log de compilaci√≥n
 typedef void  (APIENTRYP PFNGLDELETESHADERPROC)(GLuint); // Libera el objeto shader
 
 // Bloque de programas (linkeo de shaders)
@@ -101,21 +106,21 @@ typedef void  (APIENTRYP PFNGLBINDBUFFERPROC)(GLenum, GLuint); // Bindea un buff
 typedef void  (APIENTRYP PFNGLBUFFERDATAPROC)(GLenum, GLsizeiptr, const void*, GLenum); // Reserva y/o copia datos al buffer.
 typedef void  (APIENTRYP PFNGLDELETEBUFFERSPROC)(GLsizei, const GLuint*); // Libera buffers.
 
-// Vertex attributes (Le dicen al pipeline cÛmo leer el VBO para alimentar el vertex shader.)
+// Vertex attributes (Le dicen al pipeline c√≥mo leer el VBO para alimentar el vertex shader.)
 
-typedef void  (APIENTRYP PFNGLENABLEVERTEXATTRIBARRAYPROC)(GLuint); // Habilita un atributo (ej: location 0 para posiciÛn).
+typedef void  (APIENTRYP PFNGLENABLEVERTEXATTRIBARRAYPROC)(GLuint); // Habilita un atributo (ej: location 0 para posici√≥n).
 typedef void  (APIENTRYP PFNGLVERTEXATTRIBPOINTERPROC)(GLuint, GLint, GLenum, GLboolean, GLsizei, const void*); //Define el layout: cantidad de componentes, tipo, stride, offset, etc.
 
 // Uniforms (variables globales para shaders)
 
-typedef GLint(APIENTRYP PFNGLGETUNIFORMLOCATIONPROC)(GLuint, const GLchar*); //Busca la ubicaciÛn de un uniform por nombre.
+typedef GLint(APIENTRYP PFNGLGETUNIFORMLOCATIONPROC)(GLuint, const GLchar*); //Busca la ubicaci√≥n de un uniform por nombre.
 typedef void  (APIENTRYP PFNGLUNIFORM1FPROC)(GLint, GLfloat); //Setea un float.
 typedef void  (APIENTRYP PFNGLUNIFORM2FPROC)(GLint, GLfloat, GLfloat); //Setea dos floats (vec2).
 
 
 
 // Punteros:
-// Donde vamos a guardar la referencia a las funciones previamente definidas, que carguen din·micamente
+// Donde vamos a guardar la referencia a las funciones previamente definidas, que carguen din√°micamente
 static PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB_ptr = nullptr;
 
 static PFNGLCREATESHADERPROC glCreateShader_ptr = nullptr;
@@ -170,13 +175,13 @@ static bool  g_running = true;
 static int g_width = 1280;
 static int g_height = 720;
 
-// IDs de objetos OpenGL Inicializados en 0 porque 0 = objeto nulo en OpenGL, convenciÛn est·ndar
+// IDs de objetos OpenGL Inicializados en 0 porque 0 = objeto nulo en OpenGL, convenci√≥n est√°ndar
 static GLuint g_program = 0;
 static GLuint g_vao = 0;
 static GLuint g_vbo = 0;
 
 // Uniform locations cacheadas. Guardan el location de uniforms en el shader Inicializados en -1 porque:
-// -1 = uniform no encontrado / inv·lido, valor est·ndar de error
+// -1 = uniform no encontrado / inv√°lido, valor est√°ndar de error
 static GLint  g_uTime = -1;
 static GLint  g_uRes = -1;
 
@@ -186,11 +191,51 @@ static float g_mouseX = 0.0f;
 static float g_mouseY = 0.0f;
 static GLint g_uMouse = -1;
 
+
+// Globals de audio
+
+static HWAVEOUT g_waveOut = nullptr; //Handle opaco al dispositivo de salida de audio.
+
+static const int   kSampleRate = 48000;
+static const int   kChannels = 2;
+static const int   kBytesPerSample = 2; // int16, cada muestra ocupa 2 bytes
+static const int   kFramesPerBuffer = 2048; // chico = baja latencia. duraci√≥n del buffer: 2048 / 48000 = 42.6 ms
+
+// Porque si uso 1024 frames se siente "glitchy":
+// Porque con 1024 frames a 48 kHz cada buffer dura 21 ms, as√≠ que el sistema tiene muy poco margen para generar y entregar 
+// el siguiente bloque de audio antes de que el hardware se quede sin datos; cualquier retraso ocasional del scheduler de Windows 
+// de unos pocos milisegundos (5‚Äì10 ms, algo normal) provoca un underrun audible como glitch. Con 2048 frames, cada buffer dura 43 ms, 
+// el margen temporal se duplica y esos mismos retrasos ya no alcanzan para romper el flujo, por eso el audio se siente estable. 
+// Aunque tenga m√°s latencia.
+
+static const int   kNumBuffers = 2; // mientras uno suena, el otro se rellena
+
+static WAVEHDR g_waveHdr[kNumBuffers]{}; //estructura WinMM para saber qu√© reproducir.
+static short   g_audioData[kNumBuffers][kFramesPerBuffer * kChannels]{}; // kNumBuffers buffers cada uno con frames * channels muestras
+
+// 2 buffers
+// √ó 1024 frames
+// √ó 2 canales
+// = 4096 samples total
+
+// Cada muestra es lo que finalmente sale por los parlantes.
+
+static volatile bool g_audioRunning = false;
+
+// s√≠ntesis
+static double g_phase = 0.0; // phase += frequency / sampleRate. Usado para generar seno, saw, etc.
+static float  g_targetFreq = 220.0f; // Hz (la vamos a controlar con mouse) Frecuencia objetivo. 220 Hz = La grave (A3).
+static float  g_currentFreq = 220.0f; // suavizado
+
 // ---------------------------
 // Helpers
 // ---------------------------
 
-// Dame el nombre de una funciÛn OpenGL y te devuelvo un puntero ejecutable a esa funciÛn, si existe
+////////////////////////
+// Gr√°ficos:
+////////////////////////
+
+// Dame el nombre de una funci√≥n OpenGL y te devuelvo un puntero ejecutable a esa funci√≥n, si existe
 static void* GetGLProc(const char* name)
 {
 	void* p = (void*)wglGetProcAddress(name);
@@ -204,7 +249,7 @@ static void* GetGLProc(const char* name)
 }
 
 
-// Este helper hace exactamente lo que harÌa GLAD/GLEW, pero a mano y solo con lo que el programa necesita.
+// Este helper hace exactamente lo que har√≠a GLAD/GLEW, pero a mano y solo con lo que el programa necesita.
 static bool LoadGLFunctions() 
 {
 	wglCreateContextAttribsARB_ptr = (PFNWGLCREATECONTEXTATTRIBSARBPROC)GetGLProc("wglCreateContextAttribsARB");
@@ -257,7 +302,7 @@ static void DebugMessageBoxA(const char* title, const char* text)
 }
 
 
-// Define el cÛdigo GLSL de un vertex shader y un fragment shader, los compila, los linkea en un programa, 
+// Define el c√≥digo GLSL de un vertex shader y un fragment shader, los compila, los linkea en un programa, 
 // maneja errores mostrando logs, borra los objetos shader temporales y cachea los uniform locations.
 static bool CompileAndLinkProgram()
 {
@@ -413,17 +458,80 @@ static void CreateFullscreenTriangle()
 	glVertexAttribPointer_ptr(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 
 	// Le dice a OpenGL : location 0 ; tiene 2 componentes(x, y); cada componente es float
-	// no normalices(solo aplica a ints); stride = 2 * sizeof(float) porque cada vÈrtice tiene 2 floats
-	// offset = 0 porque la posiciÛn empieza al inicio del buffer
+	// no normalices(solo aplica a ints); stride = 2 * sizeof(float) porque cada v√©rtice tiene 2 floats
+	// offset = 0 porque la posici√≥n empieza al inicio del buffer
 
 	// desbindea (defensivo)
 	glBindVertexArray_ptr(0);
 	glBindBuffer_ptr(GL_ARRAY_BUFFER, 0);
 }
 
+////////////////////////
+// Audio:
+////////////////////////
+
+// Funci√≥n para llenar buffer. Esto genera un seno y le agrega un poco de cuerpo con arm√≥nicos suaves.
+
+static void FillAudioBuffer(short* outInterleaved, int frames)
+{
+	// outInterleaved: puntero al buffer de salida est√©reo intercalado
+
+	// suavizado simple (evita zipper noise cuando el mouse salta)
+	// es un filtro paso bajo de 1er orden
+	// en su forma continua: Vout(t) + RC ¬∑ (dVout(t) / dt) = Vin(t)
+	// en su forma discreta: y[n] = y[n-1] + A ¬∑ (x[n] - y[n-1]) donde A es el factor de suavizado
+	const float smooth = 0.05f;
+	g_currentFreq += (g_targetFreq - g_currentFreq) * smooth;
+
+	// Paso de fase del oscilador; phaseStep = radianes que avanzo por sample p ej: 440 Hz a 48 kHz ‚Üí ~0.0576 rad/sample
+	const double twoPi = 6.283185307179586;
+	const double phaseStep = twoPi * (double)g_currentFreq / (double)kSampleRate;
+
+	for (int i = 0; i < frames; ++i)
+	{
+		// oscilador base
+		double s = sin(g_phase);
+
+		// un par de arm√≥nicos suaves (opcional para suavizar sonido)
+		s += 0.25 * sin(g_phase * 2.0);
+		s += 0.12 * sin(g_phase * 3.0);
+
+		// normalizaci√≥n suave
+		// Como sume arm√≥nicos, la amplitud puede pasarse de 1. evita clipping
+		s *= 0.6;
+
+		// Conversi√≥n a int16 (PCM). El DAC espera int16
+		// Con clamp defensivo
+		int v = (int)(s * 32767.0);
+		if (v > 32767) v = 32767;
+		if (v < -32768) v = -32768;
+
+		// stereo interleaved [L][R][L][R][L][R]...
+		outInterleaved[i * 2 + 0] = (short)v; //izquierda
+		outInterleaved[i * 2 + 1] = (short)v; //derecha
+
+		g_phase += phaseStep; //avance de fase
+		if (g_phase >= twoPi) g_phase -= twoPi; //la fase siempre en /0, 2œÄ)
+	}
+}
+
+// Callback de waveOut
+// Cuando un buffer termin√≥ de reproducirse, el sistema manda WOM_DONE. Lo rellenamos y lo reenviamos.
+static void CALLBACK WaveOutCallback(HWAVEOUT, UINT msg, DWORD_PTR, DWORD_PTR param1, DWORD_PTR)
+{
+	if (msg != WOM_DONE) return;
+	if (!g_audioRunning) return;
+
+	WAVEHDR* hdr = (WAVEHDR*)param1;
+	if (!hdr) return;
+
+	FillAudioBuffer((short*)hdr->lpData, kFramesPerBuffer);
+	waveOutWrite(g_waveOut, hdr, sizeof(WAVEHDR));
+}
+
 
 // ---------------------------
-// Win32 + WGL
+// Win32 + WGL + Audio
 // ---------------------------	
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -457,11 +565,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 }
 
-// InicializaciÛn de WGL.
+// Inicializaci√≥n de WGL.
 // Conecto OpenGL a la ventana.
-// Creo un contexto viejo para poder cargar la funciÛn que crea un contexto moderno.
+// Creo un contexto viejo para poder cargar la funci√≥n que crea un contexto moderno.
 // Si puedo, creo OpenGL 3.3 core.Si no, me quedo con el viejo.
-// Y finalmente verifico que tengo las funciones necesarias para renderizar.î
+// Y finalmente verifico que tengo las funciones necesarias para renderizar.‚Äù
 
 static bool InitWGL(HWND hWnd)
 {
@@ -474,11 +582,11 @@ static bool InitWGL(HWND hWnd)
 	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
 	pfd.iPixelType = PFD_TYPE_RGBA;
 	pfd.cColorBits = 32;
-	pfd.cDepthBits = 24; // Z-Buffer bits (mientras m·s, mas precisa la comparacion (menos Z fighting).
+	pfd.cDepthBits = 24; // Z-Buffer bits (mientras m√°s, mas precisa la comparacion (menos Z fighting).
 
-	// Una linda definiciÛn del stencil buffer:
-	// Un buffer auxiliar, por pÌxel, que participa en pruebas (tests) durante el pipeline 
-	// de rasterizaciÛn para decidir si un fragmento se procesa o se descarta.
+	// Una linda definici√≥n del stencil buffer:
+	// Un buffer auxiliar, por p√≠xel, que participa en pruebas (tests) durante el pipeline 
+	// de rasterizaci√≥n para decidir si un fragmento se procesa o se descarta.
 	pfd.cStencilBits = 8;
 	pfd.iLayerType = PFD_MAIN_PLANE;
 
@@ -571,6 +679,69 @@ static void ShutdownGL(HWND hWnd)
 	}
 }
 
+static bool InitAudio()
+{
+	WAVEFORMATEX wfx{};
+	wfx.wFormatTag = WAVE_FORMAT_PCM; //audio sin compresion tipo PCM (pulse code modulation)
+	wfx.nChannels = kChannels;
+	wfx.nSamplesPerSec = kSampleRate;
+	wfx.wBitsPerSample = 16;
+	wfx.nBlockAlign = (wfx.nChannels * wfx.wBitsPerSample) / 8; // cu√°ntos bytes ocupa un frame
+																// 2 canales * 16 bits = 32 bits = 4 bytes
+																// 1 frame = 4 bytes (L int16 + R int16)
+	wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign; // 48000 * 4 = 192000 bytes/seg
+
+
+	// Abrir el dispositivo
+	MMRESULT r = waveOutOpen(
+		&g_waveOut, //handle
+		WAVE_MAPPER,
+		&wfx,
+		(DWORD_PTR)WaveOutCallback, // puntero a funci√≥n callback.
+		0,
+		CALLBACK_FUNCTION
+	);
+	if (r != MMSYSERR_NOERROR)
+		return false;
+
+	g_audioRunning = true;
+
+	// preparar + enviar buffers iniciales
+	for (int i = 0; i < kNumBuffers; ++i)
+	{
+		FillAudioBuffer(g_audioData[i], kFramesPerBuffer); //llena el buffer i con samples int16 est√©reo interleaved
+
+		// Describir el buffer con WAVEHDR
+		g_waveHdr[i].lpData = (LPSTR)g_audioData[i];
+		g_waveHdr[i].dwBufferLength = kFramesPerBuffer * kChannels * kBytesPerSample;
+		g_waveHdr[i].dwFlags = 0;
+
+		//Preparar el header
+		waveOutPrepareHeader(g_waveOut, &g_waveHdr[i], sizeof(WAVEHDR));
+		//Encolar el buffer para reproducci√≥n
+		waveOutWrite(g_waveOut, &g_waveHdr[i], sizeof(WAVEHDR));
+	}
+
+	return true;
+}
+
+static void ShutdownAudio()
+{
+	if (!g_waveOut) return;
+
+	g_audioRunning = false;
+
+	// parar y vaciar cola de buffers
+	waveOutReset(g_waveOut);
+
+	for (int i = 0; i < kNumBuffers; ++i)
+		waveOutUnprepareHeader(g_waveOut, &g_waveHdr[i], sizeof(WAVEHDR)); //limpieza por buffer
+
+	waveOutClose(g_waveOut); //cerrar el dispositivo
+	g_waveOut = nullptr;
+}
+
+
 // ---------------------------
 // Entry point
 // ---------------------------
@@ -598,6 +769,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 	if (!InitWGL(hWnd))
 		return 1;
 
+	if (!InitAudio())
+		return 1;
+
 	// Build program + geometry
 	if (!CompileAndLinkProgram())
 		return 1;
@@ -607,7 +781,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 	LARGE_INTEGER freq{};
 	LARGE_INTEGER prev{};
 	QueryPerformanceFrequency(&freq);
-	QueryPerformanceCounter(&prev); // reloj de alta precisiÛn en Windows.
+	QueryPerformanceCounter(&prev); // reloj de alta precisi√≥n en Windows.
 
 	MSG msg{};
 	while (g_running)
@@ -638,6 +812,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 		if (g_uRes >= 0) glUniform2f_ptr(g_uRes, (float)g_width, (float)g_height);
 		if (g_uMouse >= 0) glUniform2f_ptr(g_uMouse, g_mouseX, g_mouseY);
 
+		// mapeo simple: mouseX controla frecuencia entre 80 y 880 Hz
+		float nx = (g_width > 0) ? (g_mouseX / (float)g_width) : 0.0f;
+		if (nx < 0.0f) nx = 0.0f;
+		if (nx > 1.0f) nx = 1.0f;
+
+		g_targetFreq = 40.0f + nx * 240.0f;
+
 		// Dibujar el fullscreen triangle
 		glBindVertexArray_ptr(g_vao);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -647,6 +828,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 		Sleep(1);
 	}
 
+
 	ShutdownGL(hWnd);
+	ShutdownAudio();
+
 	return 0;
 }
